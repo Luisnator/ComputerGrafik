@@ -305,7 +305,7 @@ void renderQuad()
 	
 	// Bind vertex array object so we can render the 2 triangles.
 	glBindVertexArray(quad.vao);
-	glDrawElements(GL_TRIANGLES, 24, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_SHORT, 0);
 	//glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
@@ -360,7 +360,7 @@ void initQuad()
 {
 
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
-	const std::vector<glm::vec3> vertices = { { -1.0f, 1.0f, 0.0f }, { -1.0, -1.0, 0.0 }, { 1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f }/*Front*/,{1.0f, -1.0f,0.0f},{1.0f,1.0f,0.0f },{1.0f,-1.0f,1.0f}, {1.0f,1.0f,1.0f}/*RightSide*/,{-1,-1,0},{1,-1,0},{1,-1,1},{-1,-1,1}/*Bottom*/,{-1,-1,0},{-1,-1,1},{-1,1,0},{-1,1,1}/*LeftSide*/,{-1,-1,1},{1,-1,1},{-1,1,1},{1,1,1}/*Back*/,{-1,1,0},{1,1,0},{1,1,1},{-1,1,1}/*Top*/};
+	const std::vector<glm::vec3> vertices = { { -1.0f, 1.0f, 0.0f }, { -1.0, -1.0, 0.0 }, { 1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f }/*Front*/,{1.0f, -1.0f,0.0f},{1.0f,1.0f,0.0f },{1.0f,-1.0f,2.0f}, {1.0f,1.0f,2.0f}/*RightSide*/,{-1,-1,0},{1,-1,0},{1,-1,2},{-1,-1,2}/*Bottom*/,{-1,-1,0},{-1,-1,2},{-1,1,0},{-1,1,2}/*LeftSide*/,{-1,-1,2},{1,-1,2},{-1,1,2},{1,1,2}/*Back*/,{-1,1,0},{1,1,0},{1,1,2},{-1,1,2}/*Top*/};
 	const std::vector<glm::vec3> colors = { { 0.f, 1.f, 0.f }, { 0.f, 1.f,0.f}, { 0.f, 1.f, 0.f }, { 0.f, 1.f, 0.f }/*Front*/,{ 0.f, 1.f, 1.f },{ 0.f, 1.f,1.f },{ 0.f, 1.f, 1.f },{ 0.f, 1.f, 1.f }/*RideSide*/ ,{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f,0.f },{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f, 0.f }/*Bottom*/ ,{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f,0.f },{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f, 0.f }/*LeftSide*/ ,{ 0.f, 1.f, 0.5f },{ 0.f, 1.f,0.5f },{ 0.f, 1.f, 0.5f },{ 0.f, 1.f, 0.5f }/*Back*/,{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f,0.3f },{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f, 0.3f }/*Top*/ };
 	const std::vector<GLushort> indices = { 0, 1, 2,/**/ 0, 2, 3/*Front*/,4,5,6,/**/6,7,5/*RightSide*/,8,9,10,/**/10,11,8/*Bottom*/,12,13,14,/**/14,15,13/*LeftSide*/,16,17,18/**/,18,19,17/*Back*/,20,21,22/**/,22,23,20/*Top*/ };
 
@@ -401,7 +401,7 @@ void initQuad()
 	glBindVertexArray(0);
 
 	// Modify model matrix.
-	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, -3.0f));
 
 	//glDrawArrays(GL_LINE, 0, 30);
 }
@@ -487,7 +487,7 @@ bool init()
 {
 	// OpenGL: Set "background" color and enable depth testing.
 	glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
-	//glEnable(GL_DEPTH_TEST);
+	glEnable(GL_DEPTH_TEST);
 	//glDepthFunc(GL_LESS);
 	//glEnable(GL_CULL_FACE);
 	//glDepthMask(GL_TRUE);
@@ -553,6 +553,7 @@ void release()
  */
 void render()
 {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT);
 	//renderTriangle();
 	renderQuad();
@@ -562,7 +563,7 @@ void render()
 void glutDisplay ()
 {
    GLCODE(render());
-   //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  
    glutSwapBuffers();
 }
 

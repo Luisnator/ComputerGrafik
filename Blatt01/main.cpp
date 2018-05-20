@@ -70,12 +70,25 @@ struct cmy
 	double m;
 	double y;
 };
+struct viewpoint
+{
+	glm::vec3 eye;
+	glm::vec3 center;
+	glm::vec3 up;
+	/*
+	glm::vec3 eye(0.0f, 0.0f, 5.0f);
+	glm::vec3 center(0.0f, 0.0f, 0.0f);
+	glm::vec3 up(0.0f, 1.0f, 0.0f);
+	*/
+};
 
 Object triangle;
 Object quad;
 Object circle;
 Object lines;
 rgb quadcolor;
+viewpoint viewp;
+
 
 hsv rgbToHsv(rgb model)
 {
@@ -552,14 +565,10 @@ bool init()
 	//glDepthMask(GL_TRUE);
 	//glDepthFunc(GL_LEQUAL);
 	glShadeModel(GL_SMOOTH);
-
-	// Construct view matrix.
-	glm::vec3 eye(0.0f, 0.0f, 5.0f);
-	glm::vec3 center(0.0f, 0.0f, 0.0f);
-	glm::vec3 up(0.0f, 1.0f, 0.0f);
-	
-
-	view = glm::lookAt(eye, center, up);
+	viewp.eye = { 0.0f,0.0f,5.0f };
+	viewp.center = { 0.0f,0.0f,0.f };
+	viewp.up = { 0.0f,1.0f,0.0f };
+	view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
 
 	// Create a shader program and set light direction.
 	if (!program.compileShaderFromFile("shader/simple.vert", cg::GLSLShader::VERTEX))
@@ -725,7 +734,16 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		}
 		refresh();
 		break;
+	case 'a':
+		viewp.eye.z += 0.1;
+		view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
+		break;
+	case 's':
+		viewp.eye.z -= 0.1;
+		view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
+		break;
 	}
+	
 	glutPostRedisplay();
 }
 

@@ -74,6 +74,7 @@ struct cmy
 Object triangle;
 Object quad;
 Object circle;
+Object lines;
 rgb quadcolor;
 
 hsv rgbToHsv(rgb model)
@@ -310,6 +311,22 @@ void renderQuad()
 	glBindVertexArray(0);
 }
 
+void renderLines()
+{
+	// Create mvp.
+	glm::mat4x4 mvp = projection * view * lines.model;
+
+	// Bind the shader program and set uniform(s).
+	program.use();
+	program.setUniform("mvp", mvp);
+
+	// Bind vertex array object so we can render the 2 triangles.
+	glBindVertexArray(lines.vao);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+	//glDrawArrays(GL_TRIANGLES, 0, 36);
+	glBindVertexArray(0);
+}
+
 void initTriangle()
 {
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
@@ -354,6 +371,51 @@ void initTriangle()
 
 	// Modify model matrix.
 	triangle.model = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+}
+void initLines()
+{
+	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
+	const std::vector<glm::vec3> vertices = { glm::vec3(-1000.0f, 0.0f, 0.0f), glm::vec3(+1000.0f, 0.0f, 0.0f),glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1000.0f), glm::vec3(0.0f, 0.0f, 1000.0f) };
+	const std::vector<glm::vec3> colors = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+	const std::vector<GLushort> indices = { 0, 1,2,3,4,5};
+
+	GLuint programId = program.getHandle();
+	GLuint pos;
+
+	// Step 0: Create vertex array object.
+	glGenVertexArrays(1, &lines.vao);
+	glBindVertexArray(lines.vao);
+
+	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
+	glGenBuffers(1, &lines.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, lines.positionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind it to position.
+	pos = glGetAttribLocation(programId, "position");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 2: Create vertex buffer object for color attribute and bind it to...
+	glGenBuffers(1, &lines.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, lines.colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
+
+	// Bind it to color.
+	pos = glGetAttribLocation(programId, "color");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 3: Create vertex buffer object for indices. No binding needed here.
+	glGenBuffers(1, &lines.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lines.indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
+
+	// Unbind vertex array object (back to default).
+	glBindVertexArray(0);
+
+	// Modify model matrix.
+	lines.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 void initQuad()
@@ -401,7 +463,7 @@ void initQuad()
 	glBindVertexArray(0);
 
 	// Modify model matrix.
-	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, -3.0f));
+	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
 
 	//glDrawArrays(GL_LINE, 0, 30);
 }
@@ -492,12 +554,13 @@ bool init()
 	//glEnable(GL_CULL_FACE);
 	//glDepthMask(GL_TRUE);
 	//glDepthFunc(GL_LEQUAL);
-	//glShadeModel(GL_SMOOTH);
+	glShadeModel(GL_SMOOTH);
 
 	// Construct view matrix.
 	glm::vec3 eye(0.0f, 0.0f, 4.0f);
 	glm::vec3 center(0.0f, 0.0f, 0.0f);
 	glm::vec3 up(0.0f, 1.0f, 0.0f);
+	
 
 	view = glm::lookAt(eye, center, up);
 
@@ -523,6 +586,7 @@ bool init()
 	// Create objects.
 	//initTriangle();
 	initQuad();
+	initLines();
 	//initCircle();
 	return true;
 }
@@ -557,6 +621,7 @@ void render()
 	glClear(GL_COLOR_BUFFER_BIT);
 	//renderTriangle();
 	renderQuad();
+	renderLines();
 	//renderCircle();
 }
 

@@ -75,11 +75,6 @@ struct viewpoint
 	glm::vec3 eye;
 	glm::vec3 center;
 	glm::vec3 up;
-	/*
-	glm::vec3 eye(0.0f, 0.0f, 5.0f);
-	glm::vec3 center(0.0f, 0.0f, 0.0f);
-	glm::vec3 up(0.0f, 1.0f, 0.0f);
-	*/
 };
 
 Object triangle;
@@ -560,10 +555,6 @@ bool init()
 	// OpenGL: Set "background" color and enable depth testing.
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	//glDepthFunc(GL_LESS);
-	//glEnable(GL_CULL_FACE);
-	//glDepthMask(GL_TRUE);
-	//glDepthFunc(GL_LEQUAL);
 	glShadeModel(GL_SMOOTH);
 	viewp.eye = { 0.0f,0.0f,5.0f };
 	viewp.center = { 0.0f,0.0f,0.f };
@@ -590,10 +581,8 @@ bool init()
 	}
 
 	// Create objects.
-	//initTriangle();
 	initQuad();
 	initLines();
-	//initCircle();
 	return true;
 }
 
@@ -640,12 +629,8 @@ void glutDisplay ()
 
 void refresh()
 {
-	//initTriangle();
-	//renderTriangle();
 	initQuad();
 	renderQuad();
-	//initCircle();
-	//renderCircle();
 }
 
 /*
@@ -666,22 +651,23 @@ void glutResize (int width, int height)
  */
 void glutKeyboard (unsigned char keycode, int x, int y)
 {
+	const float radiant = 0.1;
 	glm::mat4x4 zmat = {
-		cos(0.1),-sin(0.1),0,0,
-		sin(0.1),cos(0.1),0,0,
+		cos(radiant),-sin(radiant),0,0,
+		sin(radiant),cos(radiant),0,0,
 		0,0,1,0,
 		0,0,0,1
 	};
 	glm::mat4x4 xmat = {
 		1,0,0,0,
-		0,cos(0.1),-sin(0.1),0,
-		0,sin(0.1),cos(0.1),0,
+		0,cos(radiant),-sin(radiant),0,
+		0,sin(radiant),cos(radiant),0,
 		0,0,0,1
 	};
 	glm::mat4x4 ymat = {
-		cos(0.1),0,sin(0.1),0,
+		cos(radiant),0,sin(radiant),0,
 		0,1,0,0,
-		-sin(0.1),0,cos(0.1),0,
+		-sin(radiant),0,cos(radiant),0,
 		0,0,0,1
 	};
 	glm::mat4x4 backup = quad.model;

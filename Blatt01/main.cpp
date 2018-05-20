@@ -413,16 +413,13 @@ void initLines()
 
 	// Unbind vertex array object (back to default).
 	glBindVertexArray(0);
-
-	// Modify model matrix.
-	lines.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 void initQuad()
 {
 
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
-	const std::vector<glm::vec3> vertices = { { -1.0f, 1.0f, 0.0f }, { -1.0, -1.0, 0.0 }, { 1.0f, -1.0f, 0.0f }, { 1.0f, 1.0f, 0.0f }/*Front*/,{1.0f, -1.0f,0.0f},{1.0f,1.0f,0.0f },{1.0f,-1.0f,2.0f}, {1.0f,1.0f,2.0f}/*RightSide*/,{-1,-1,0},{1,-1,0},{1,-1,2},{-1,-1,2}/*Bottom*/,{-1,-1,0},{-1,-1,2},{-1,1,0},{-1,1,2}/*LeftSide*/,{-1,-1,2},{1,-1,2},{-1,1,2},{1,1,2}/*Back*/,{-1,1,0},{1,1,0},{1,1,2},{-1,1,2}/*Top*/};
+	const std::vector<glm::vec3> vertices = { { -1.0f, 1.0f, -1.0f }, { -1.0, -1.0, -1.0 }, { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, -1.0f }/*Front*/,{1.0f, -1.0f,-1.0f},{1.0f,1.0f,-1.0f },{1.0f,-1.0f,1.0f}, {1.0f,1.0f,1.0f}/*RightSide*/,{-1,-1,-1},{1,-1,-1},{1,-1,1},{-1,-1,1}/*Bottom*/,{-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1}/*LeftSide*/,{-1,-1,1},{1,-1,1},{-1,1,1},{1,1,1}/*Back*/,{-1,1,-1},{1,1,-1},{1,1,1},{-1,1,1}/*Top*/};
 	const std::vector<glm::vec3> colors = { { 0.f, 1.f, 0.f }, { 0.f, 1.f,0.f}, { 0.f, 1.f, 0.f }, { 0.f, 1.f, 0.f }/*Front*/,{ 0.f, 1.f, 1.f },{ 0.f, 1.f,1.f },{ 0.f, 1.f, 1.f },{ 0.f, 1.f, 1.f }/*RideSide*/ ,{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f,0.f },{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f, 0.f }/*Bottom*/ ,{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f,0.f },{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f, 0.f }/*LeftSide*/ ,{ 0.f, 1.f, 0.5f },{ 0.f, 1.f,0.5f },{ 0.f, 1.f, 0.5f },{ 0.f, 1.f, 0.5f }/*Back*/,{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f,0.3f },{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f, 0.3f }/*Top*/ };
 	const std::vector<GLushort> indices = { 0, 1, 2,/**/ 0, 2, 3/*Front*/,4,5,6,/**/6,7,5/*RightSide*/,8,9,10,/**/10,11,8/*Bottom*/,12,13,14,/**/14,15,13/*LeftSide*/,16,17,18/**/,18,19,17/*Back*/,20,21,22/**/,22,23,20/*Top*/ };
 
@@ -463,7 +460,7 @@ void initQuad()
 	glBindVertexArray(0);
 
 	// Modify model matrix.
-	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f));
+	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 
 	//glDrawArrays(GL_LINE, 0, 30);
 }
@@ -548,7 +545,7 @@ void initCircle()
 bool init()
 {
 	// OpenGL: Set "background" color and enable depth testing.
-	glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	//glDepthFunc(GL_LESS);
 	//glEnable(GL_CULL_FACE);
@@ -557,7 +554,7 @@ bool init()
 	glShadeModel(GL_SMOOTH);
 
 	// Construct view matrix.
-	glm::vec3 eye(0.0f, 0.0f, 4.0f);
+	glm::vec3 eye(0.0f, 0.0f, 5.0f);
 	glm::vec3 center(0.0f, 0.0f, 0.0f);
 	glm::vec3 up(0.0f, 1.0f, 0.0f);
 	
@@ -660,6 +657,27 @@ void glutResize (int width, int height)
  */
 void glutKeyboard (unsigned char keycode, int x, int y)
 {
+	glm::mat4x4 zmat = {
+		cos(0.1),-sin(0.1),0,0,
+		sin(0.1),cos(0.1),0,0,
+		0,0,1,0,
+		0,0,0,1
+	};
+	glm::mat4x4 xmat = {
+		1,0,0,0,
+		0,cos(0.1),-sin(0.1),0,
+		0,sin(0.1),cos(0.1),0,
+		0,0,0,1
+	};
+	glm::mat4x4 ymat = {
+		cos(0.1),0,sin(0.1),0,
+		0,1,0,0,
+		-sin(0.1),0,cos(0.1),0,
+		0,0,0,1
+	};
+	glm::mat4x4 backup = quad.model;
+	glm::mat4x4 inverse = glm::inverse(quad.model);
+
 	switch (keycode)
 	{
 	case 27: // ESC
@@ -679,13 +697,19 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		refresh();
 		break;
 	case 'x':
-		// do something
+		quad.model = quad.model * inverse;
+		quad.model = quad.model * xmat;
+		quad.model = quad.model * backup;
 		break;
 	case 'y':
-		// do something
+		quad.model = quad.model * inverse;
+		quad.model = quad.model * ymat;
+		quad.model = quad.model * backup;
 		break;
 	case 'z':
-		// do something
+		quad.model = quad.model * inverse;
+		quad.model = quad.model * zmat;
+		quad.model = quad.model * backup;
 		break;
 	case 'q':
 		if (radius <= 2.f)

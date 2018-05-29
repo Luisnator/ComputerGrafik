@@ -13,6 +13,8 @@
 #include "GLTools.h"
 #include <cmath>
 #include <math.h>
+#include <time.h>
+#include <ctime>
 #define M_PI acos(-1.0)
 
 // Standard window width
@@ -26,9 +28,11 @@ cg::GLSLProgram program;
 
 glm::mat4x4 view;
 glm::mat4x4 projection;
-
+std::clock_t start;
 float zNear = 0.1f;
 float zFar  = 100.0f;
+
+
 
 /*
 Struct to hold data for object rendering.
@@ -54,25 +58,63 @@ struct viewpoint
 	glm::vec3 center;
 	glm::vec3 up;
 };
+glm::mat4x4 xmat;
+glm::mat4x4 ymat;
+glm::mat4x4 zmat;
 
 
 Object quad;
+Object sun;
+Object planet;
+Object planet2;
+Object moon1p1;
+Object moon2p1;
+Object moon3p1;
+Object moon4p1;
+Object moon5p1;
+Object moon6p1;
+Object moon7p1;
+Object moon8p1;
+Object moon9p1;
+Object moon10p1;
+Object moon1p2;
+Object moon2p2;
+Object moon3p2;
+
 Object lines;
 viewpoint viewp;
 
-void renderQuad()
+void refreshMatrix(float radiant)
+{
+	xmat = {
+		1,0,0,0,
+		0,cos(radiant),-sin(radiant),0,
+		0,sin(radiant),cos(radiant),0,
+		0,0,0,1 };
+	ymat = { cos(radiant),0,sin(radiant),0,
+		0,1,0,0,
+		-sin(radiant),0,cos(radiant),0,
+		0,0,0,1 };
+	zmat = {
+		cos(radiant),-sin(radiant),0,0,
+		sin(radiant),cos(radiant),0,0,
+		0,0,1,0,
+		0,0,0,1
+	};
+}
+
+void renderQuad(Object model)
 {
 	// Create mvp.
-	glm::mat4x4 mvp = projection * view * quad.model;
+	glm::mat4x4 mvp = projection * view * model.model;
 
 	// Bind the shader program and set uniform(s).
 	program.use();
 	program.setUniform("mvp", mvp);
 	
 	// Bind vertex array object so we can render the 2 triangles.
-	glBindVertexArray(quad.vao);
+	glBindVertexArray(model.vao);
 	glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_SHORT, 0);
-	//glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
 
@@ -88,7 +130,6 @@ void renderLines()
 	// Bind vertex array object so we can render the 2 triangles.
 	glBindVertexArray(lines.vao);
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
-	//glDrawArrays(GL_TRIANGLES, 0, 36);
 	glBindVertexArray(0);
 }
 
@@ -96,10 +137,9 @@ void renderLines()
 void initLines()
 {
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
-	const std::vector<glm::vec3> vertices = { glm::vec3(-1000.0f, 0.0f, 0.0f), glm::vec3(+1000.0f, 0.0f, 0.0f),glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1000.0f), glm::vec3(0.0f, 0.0f, 1000.0f) };
-	const std::vector<glm::vec3> colors = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+	const std::vector<glm::vec3> vertices = { planet.model * glm::vec4(0,-10.f,0,1), planet.model * glm::vec4(0,10.f,0,1),glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f), planet2.model *glm::vec4(0.0f, -10.0f, 0,1), planet2.model* glm::vec4(0.0f, 10.0f, 0.f,1) };
+	const std::vector<glm::vec3> colors = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
 	const std::vector<GLushort> indices = { 0, 1,2,3,4,5};
-
 	GLuint programId = program.getHandle();
 	GLuint pos;
 
@@ -136,7 +176,7 @@ void initLines()
 	glBindVertexArray(0);
 }
 
-void initQuad()
+void initQuad(Object &model)
 {
 
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
@@ -149,12 +189,12 @@ void initQuad()
 	GLuint pos;
 
 	// Step 0: Create vertex array object.
-	glGenVertexArrays(1, &quad.vao);
-	glBindVertexArray(quad.vao);
+	glGenVertexArrays(1, &model.vao);
+	glBindVertexArray(model.vao);
 
 	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
-	glGenBuffers(1, &quad.positionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, quad.positionBuffer);
+	glGenBuffers(1, &model.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, model.positionBuffer);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
 
 	// Bind it to position.
@@ -163,8 +203,8 @@ void initQuad()
 	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Step 2: Create vertex buffer object for color attribute and bind it to...
-	glGenBuffers(1, &quad.colorBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, quad.colorBuffer);
+	glGenBuffers(1, &model.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, model.colorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 
 	// Bind it to color.
@@ -173,20 +213,80 @@ void initQuad()
 	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Step 3: Create vertex buffer object for indices. No binding needed here.
-	glGenBuffers(1, &quad.indexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.indexBuffer);
+	glGenBuffers(1, &model.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model.indexBuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
 
 	// Unbind vertex array object (back to default).
 	glBindVertexArray(0);
 
 	// Modify model matrix.
-	quad.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-
-	//glDrawArrays(GL_LINE, 0, 30);
+	model.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
+void initall()
+{
 
+	initQuad(sun);
+	initQuad(planet);
+	planet.model = glm::translate(planet.model, glm::vec3(15, 0, 0));
+	refreshMatrix(2 * M_PI / 8);
+	planet.model = planet.model * zmat;
+	initQuad(planet2);
+	planet2.model = glm::translate(planet2.model, glm::vec3(-15, 0, 0));
+	initQuad(moon1p1);
+	moon1p1.model = planet.model;
+	moon1p1.model = glm::scale(moon1p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon1p1.model = glm::translate(moon1p1.model, glm::vec3(10,0,0));
+	initQuad(moon2p1);
+	moon2p1.model = planet.model;
+	moon2p1.model = glm::scale(moon2p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon2p1.model = glm::translate(moon2p1.model, glm::vec3(-10, 0, 0));
+	initQuad(moon3p1);
+	moon3p1.model = planet.model;
+	moon3p1.model = glm::scale(moon3p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon3p1.model = glm::translate(moon3p1.model, glm::vec3(-10, 5, 0));
+	initQuad(moon4p1);
+	moon4p1.model = planet.model;
+	moon4p1.model = glm::scale(moon4p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon4p1.model = glm::translate(moon4p1.model, glm::vec3(10, 5, 0));
+	initQuad(moon5p1);
+	moon5p1.model = planet.model;
+	moon5p1.model = glm::scale(moon5p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon5p1.model = glm::translate(moon5p1.model, glm::vec3(0, 5, -10));
+	initQuad(moon6p1);
+	moon6p1.model = planet.model;
+	moon6p1.model = glm::scale(moon6p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon6p1.model = glm::translate(moon6p1.model, glm::vec3(0, 5, 10));
+	initQuad(moon7p1);
+	moon7p1.model = planet.model;
+	moon7p1.model = glm::scale(moon7p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon7p1.model = glm::translate(moon7p1.model, glm::vec3(-10, -5, 0));
+	initQuad(moon8p1);
+	moon8p1.model = planet.model;
+	moon8p1.model = glm::scale(moon8p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon8p1.model = glm::translate(moon8p1.model, glm::vec3(10, -5, 0));
+	initQuad(moon9p1);
+	moon9p1.model = planet.model;
+	moon9p1.model = glm::scale(moon9p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon9p1.model = glm::translate(moon9p1.model, glm::vec3(0, -5, -10));
+	initQuad(moon10p1);
+	moon10p1.model = planet.model;
+	moon10p1.model = glm::scale(moon10p1.model, glm::vec3(0.5, 0.5, 0.5));
+	moon10p1.model = glm::translate(moon10p1.model, glm::vec3(0, -5, 10));
+	initQuad(moon1p2);
+	moon1p2.model = planet2.model;
+	moon1p2.model = glm::scale(moon1p2.model, glm::vec3(0.5, 0.5, 0.5));
+	moon1p2.model = glm::translate(moon1p2.model, glm::vec3(-10, 0, 10));
+	initQuad(moon2p2);
+	moon2p2.model = planet2.model;
+	moon2p2.model = glm::scale(moon2p2.model, glm::vec3(0.5, 0.5, 0.5));
+	moon2p2.model = glm::translate(moon2p2.model, glm::vec3(10, 0, 10));
+	initQuad(moon3p2);
+	moon3p2.model = planet2.model;
+	moon3p2.model = glm::scale(moon3p2.model, glm::vec3(0.5, 0.5, 0.5));
+	moon3p2.model = glm::translate(moon3p2.model, glm::vec3(0, 0, -10));
+}
 
 /*
  Initialization. Should return true if everything is ok and false if something went wrong.
@@ -197,11 +297,11 @@ bool init()
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glShadeModel(GL_SMOOTH);
-	viewp.eye = { 0.0f,0.0f,5.0f };
+	viewp.eye = { 0.0f,15.0f,30.0f };
 	viewp.center = { 0.0f,0.0f,0.f };
 	viewp.up = { 0.0f,1.0f,0.0f };
 	view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
-
+	refreshMatrix(0.1);
 	// Create a shader program and set light direction.
 	if (!program.compileShaderFromFile("shader/simple.vert", cg::GLSLShader::VERTEX))
 	{
@@ -222,10 +322,60 @@ bool init()
 	}
 
 	// Create objects.
-	initQuad();
+	initall();
 	initLines();
 	return true;
 }
+
+void doSomething()
+{
+	//Planet1
+	planet.model = planet.model * glm::inverse(planet.model) * ymat * planet.model;
+	//Moon1
+	moon1p1.model =  glm::translate(glm::translate(moon1p1.model, glm::vec3(-10, 0, 0))*ymat,glm::vec3(10,0,0));
+	moon1p1.model = moon1p1.model * glm::inverse(moon1p1.model) * ymat * moon1p1.model;
+	//Moon2
+	moon2p1.model = glm::translate(glm::translate(moon2p1.model, glm::vec3(10, 0, 0))*ymat, glm::vec3(-10, 0, 0));
+	moon2p1.model = moon2p1.model * glm::inverse(moon2p1.model) * ymat * moon2p1.model;
+	//Moon3
+	moon3p1.model = glm::translate(glm::translate(moon3p1.model, glm::vec3(10, 0, 0))*ymat, glm::vec3(-10, 0, 0));
+	moon3p1.model = moon3p1.model * glm::inverse(moon3p1.model) * ymat * moon3p1.model;
+	//Moon4
+	moon4p1.model = glm::translate(glm::translate(moon4p1.model, glm::vec3(-10, 0, 0))*ymat, glm::vec3(10, 0, 0));
+	moon4p1.model = moon4p1.model * glm::inverse(moon4p1.model) * ymat * moon4p1.model;
+	//Moon5
+	moon5p1.model = glm::translate(glm::translate(moon5p1.model, glm::vec3(0, 0, 10))*ymat, glm::vec3(0, 0, -10));
+	moon5p1.model = moon5p1.model * glm::inverse(moon5p1.model) * ymat * moon5p1.model;
+	//Moon6
+	moon6p1.model = glm::translate(glm::translate(moon6p1.model, glm::vec3(0, 0,-10))*ymat, glm::vec3(0, 0, 10));
+	moon6p1.model = moon6p1.model * glm::inverse(moon6p1.model) * ymat * moon6p1.model;
+	//Moon7
+	moon7p1.model = glm::translate(glm::translate(moon7p1.model, glm::vec3(10, 0, 0))*ymat, glm::vec3(-10, 0, 0));
+	moon7p1.model = moon7p1.model * glm::inverse(moon7p1.model) * ymat * moon7p1.model;
+	//Moon8
+	moon8p1.model = glm::translate(glm::translate(moon8p1.model, glm::vec3(-10, 0, 0))*ymat, glm::vec3(10, 0, 0));
+	moon8p1.model = moon8p1.model * glm::inverse(moon8p1.model) * ymat * moon8p1.model;
+	//Moon9
+	moon9p1.model = glm::translate(glm::translate(moon9p1.model, glm::vec3(0, 0, 10))*ymat, glm::vec3(0, 0, -10));
+	moon9p1.model = moon9p1.model * glm::inverse(moon9p1.model) * ymat * moon9p1.model;
+	//Moon10
+	moon10p1.model = glm::translate(glm::translate(moon10p1.model, glm::vec3(0, 0, -10))*ymat, glm::vec3(0, 0, 10));
+	moon10p1.model = moon10p1.model * glm::inverse(moon10p1.model) * ymat * moon10p1.model;
+	//Planet2
+	planet2.model = planet2.model * glm::inverse(planet2.model) * ymat * planet2.model;
+	//Moon1
+	moon1p2.model = glm::translate(glm::translate(moon1p2.model, glm::vec3(10, 0, -10))*ymat, glm::vec3(-10, 0, 10));
+	moon1p2.model = moon1p2.model * glm::inverse(moon1p2.model) * ymat * moon1p2.model;
+	//Moon2
+	moon2p2.model = glm::translate(glm::translate(moon2p2.model, glm::vec3(-10, 0, -10))*ymat, glm::vec3(10, 0, 10));
+	moon2p2.model = moon2p2.model * glm::inverse(moon2p2.model) * ymat * moon2p2.model;
+	//Moon3
+	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(0, 0, 10))*ymat, glm::vec3(0, 0, -10));
+	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
+
+	initLines();
+}
+
 
 /*
  Release object resources.
@@ -247,6 +397,27 @@ void release()
 	releaseObject(quad);
 }
 
+
+void renderall()
+{
+	renderQuad(sun);
+	renderQuad(planet);
+	renderQuad(planet2);
+	renderQuad(moon1p1);
+	renderQuad(moon2p1);
+	renderQuad(moon3p1);
+	renderQuad(moon4p1);
+	renderQuad(moon5p1);
+	renderQuad(moon6p1);
+	renderQuad(moon7p1);
+	renderQuad(moon8p1);
+	renderQuad(moon9p1);
+	renderQuad(moon10p1);
+	renderQuad(moon1p2);
+	renderQuad(moon2p2);
+	renderQuad(moon3p2);
+
+}
 /*
  Rendering.
  */
@@ -254,22 +425,24 @@ void render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT);
-	renderQuad();
+	renderall();
 	renderLines();
+}
+void refresh()
+{
+	doSomething();
+	renderall();
 }
 
 void glutDisplay ()
 {
    GLCODE(render());
-  
    glutSwapBuffers();
+   refreshMatrix(0.1f *(std::clock() - start)/50);
+   start = std::clock();
+   refresh();
 }
 
-void refresh()
-{
-	initQuad();
-	renderQuad();
-}
 
 /*
  Resize callback.
@@ -332,9 +505,7 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		quad.model = quad.model * backup;
 		break;
 	case 'z':
-		quad.model = quad.model * inverse;
-		quad.model = quad.model * zmat;
-		quad.model = quad.model * backup;
+		doSomething();
 		break;
 	case 'a':
 		viewp.eye.z += 0.1;
@@ -349,6 +520,8 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 	glutPostRedisplay();
 }
 
+
+
 int main(int argc, char** argv)
 {
 	// GLUT: Initialize freeglut library (window toolkit).
@@ -361,7 +534,7 @@ int main(int argc, char** argv)
 	glutInitContextFlags  (GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 	glutInitDisplayMode   (GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH | GLUT_MULTISAMPLE);
 
-	glutCreateWindow("Aufgabenblatt 01");
+	glutCreateWindow("Aufgabenblatt X");
 	glutID = glutGetWindow();
 	  
 	// GLEW: Load opengl extensions
@@ -375,10 +548,9 @@ int main(int argc, char** argv)
 	// GLUT: Set callbacks for events.
 	glutReshapeFunc(glutResize);
 	glutDisplayFunc(glutDisplay);
-	//glutIdleFunc   (glutDisplay); // redisplay when idle
-
+	glutIdleFunc   (glutDisplay); // redisplay when idle
 	glutKeyboardFunc(glutKeyboard);
-
+	start = std::clock();
 	// Init VAO.
 	{
 		GLCODE(bool result = init());
@@ -391,9 +563,9 @@ int main(int argc, char** argv)
 	// GLUT: Loop until the user closes the window
 	// rendering & event handling
 	glutMainLoop ();
-
 	// Clean up everything on termination.
 	release();
+	
 
 	return 0;
 }

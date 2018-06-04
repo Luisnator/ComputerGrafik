@@ -107,7 +107,7 @@ void refreshMatrix(float radiant)
 	rad = radiant;
 }
 
-void renderQuad(Object model)
+void renderWire(Object model)
 {
 	// Create mvp.
 	glm::mat4x4 mvp = projection * view * model.model;
@@ -115,10 +115,15 @@ void renderQuad(Object model)
 	// Bind the shader program and set uniform(s).
 	program.use();
 	program.setUniform("mvp", mvp);
-	
-	// Bind vertex array object so we can render the 2 triangles.
+
+	// GLUT: bind vertex-array-object
+	// this vertex-array-object must be bound before the glutWireSphere call
 	glBindVertexArray(model.vao);
-	glDrawElements(GL_TRIANGLES, 6*6, GL_UNSIGNED_SHORT, 0);
+
+	//glLineWidth(1.0f);
+	glutWireSphere(1.0, 10, 10);
+
+	// GLUT: unbind vertex-array-object
 	glBindVertexArray(0);
 }
 
@@ -180,113 +185,83 @@ void initLines()
 	glBindVertexArray(0);
 }
 
-void initQuad(Object &model)
+void initWire(Object &model)
 {
 
-	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
-	const std::vector<glm::vec3> vertices = { { -1.0f, 1.0f, -1.0f }, { -1.0, -1.0, -1.0 }, { 1.0f, -1.0f, -1.0f }, { 1.0f, 1.0f, -1.0f }/*Front*/,{1.0f, -1.0f,-1.0f},{1.0f,1.0f,-1.0f },{1.0f,-1.0f,1.0f}, {1.0f,1.0f,1.0f}/*RightSide*/,{-1,-1,-1},{1,-1,-1},{1,-1,1},{-1,-1,1}/*Bottom*/,{-1,-1,-1},{-1,-1,1},{-1,1,-1},{-1,1,1}/*LeftSide*/,{-1,-1,1},{1,-1,1},{-1,1,1},{1,1,1}/*Back*/,{-1,1,-1},{1,1,-1},{1,1,1},{-1,1,1}/*Top*/};
-	const std::vector<glm::vec3> colors = { { 0.f, 1.f, 0.f }, { 0.f, 1.f,0.f}, { 0.f, 1.f, 0.f }, { 0.f, 1.f, 0.f }/*Front*/,{ 0.f, 1.f, 1.f },{ 0.f, 1.f,1.f },{ 0.f, 1.f, 1.f },{ 0.f, 1.f, 1.f }/*RideSide*/ ,{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f,0.f },{ 0.5f, 1.f, 0.f },{ 0.5f, 1.f, 0.f }/*Bottom*/ ,{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f,0.f },{ 1.f, 0.5f, 0.f },{ 1.f, 0.5f, 0.f }/*LeftSide*/ ,{ 0.f, 1.f, 0.5f },{ 0.f, 1.f,0.5f },{ 0.f, 1.f, 0.5f },{ 0.f, 1.f, 0.5f }/*Back*/,{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f,0.3f },{ 0.7f, 1.f, 0.3f },{ 0.7f, 1.f, 0.3f }/*Top*/ };
-	const std::vector<GLushort> indices = { 0, 1, 2,/**/ 0, 2, 3/*Front*/,4,5,6,/**/6,7,5/*RightSide*/,8,9,10,/**/10,11,8/*Bottom*/,12,13,14,/**/14,15,13/*LeftSide*/,16,17,18/**/,18,19,17/*Back*/,20,21,22/**/,22,23,20/*Top*/ };
-
-
+	// set attribute locations (of shader) for GLUT
 	GLuint programId = program.getHandle();
-	GLuint pos;
-
-	// Step 0: Create vertex array object.
+	// position attribute to variable "position"
+	glutSetVertexAttribCoord3(glGetAttribLocation(programId, "position"));
+	// normal attribute to variable "color"
+	// this creates a colorful sphere :-)
+	glutSetVertexAttribNormal(glGetAttribLocation(programId, "color"));
+	// create a vertex-array-object for GLUT geometry
 	glGenVertexArrays(1, &model.vao);
-	glBindVertexArray(model.vao);
-
-	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
-	glGenBuffers(1, &model.positionBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, model.positionBuffer);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
-
-	// Bind it to position.
-	pos = glGetAttribLocation(programId, "position");
-	glEnableVertexAttribArray(pos);
-	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	// Step 2: Create vertex buffer object for color attribute and bind it to...
-	glGenBuffers(1, &model.colorBuffer);
-	glBindBuffer(GL_ARRAY_BUFFER, model.colorBuffer);
-	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
-
-	// Bind it to color.
-	pos = glGetAttribLocation(programId, "color");
-	glEnableVertexAttribArray(pos);
-	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	// Step 3: Create vertex buffer object for indices. No binding needed here.
-	glGenBuffers(1, &model.indexBuffer);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model.indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
-
-	// Unbind vertex array object (back to default).
-	glBindVertexArray(0);
 
 	// Modify model matrix.
-	model.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+	model.model = glm::mat4(1.0f);
 }
 
 void initall()
 {
 
-	initQuad(sun);
-	initQuad(planet);
+	initWire(sun);
+	sun.model = glm::scale(sun.model, glm::vec3(2, 2, 2));
+	initWire(planet);
 	planet.model = glm::translate(planet.model, glm::vec3(20, 0, 0));
 	refreshMatrix(2 * M_PI / 8);
 	planet.model = planet.model * zmat;
-	initQuad(planet2);
+	initWire(planet2);
 	planet2.model = glm::translate(planet2.model, glm::vec3(-10, 0, 0));
-	initQuad(moon1p1);
+	initWire(moon1p1);
 	moon1p1.model = planet.model;
 	moon1p1.model = glm::scale(moon1p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon1p1.model = glm::translate(moon1p1.model, glm::vec3(10,0,0));
-	initQuad(moon2p1);
+	initWire(moon2p1);
 	moon2p1.model = planet.model;
 	moon2p1.model = glm::scale(moon2p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon2p1.model = glm::translate(moon2p1.model, glm::vec3(-10, 0, 0));
-	initQuad(moon3p1);
+	initWire(moon3p1);
 	moon3p1.model = planet.model;
 	moon3p1.model = glm::scale(moon3p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon3p1.model = glm::translate(moon3p1.model, glm::vec3(-10, 5, 0));
-	initQuad(moon4p1);
+	initWire(moon4p1);
 	moon4p1.model = planet.model;
 	moon4p1.model = glm::scale(moon4p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon4p1.model = glm::translate(moon4p1.model, glm::vec3(10, 5, 0));
-	initQuad(moon5p1);
+	initWire(moon5p1);
 	moon5p1.model = planet.model;
 	moon5p1.model = glm::scale(moon5p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon5p1.model = glm::translate(moon5p1.model, glm::vec3(0, 5, -10));
-	initQuad(moon6p1);
+	initWire(moon6p1);
 	moon6p1.model = planet.model;
 	moon6p1.model = glm::scale(moon6p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon6p1.model = glm::translate(moon6p1.model, glm::vec3(0, 5, 10));
-	initQuad(moon7p1);
+	initWire(moon7p1);
 	moon7p1.model = planet.model;
 	moon7p1.model = glm::scale(moon7p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon7p1.model = glm::translate(moon7p1.model, glm::vec3(-10, -5, 0));
-	initQuad(moon8p1);
+	initWire(moon8p1);
 	moon8p1.model = planet.model;
 	moon8p1.model = glm::scale(moon8p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon8p1.model = glm::translate(moon8p1.model, glm::vec3(10, -5, 0));
-	initQuad(moon9p1);
+	initWire(moon9p1);
 	moon9p1.model = planet.model;
 	moon9p1.model = glm::scale(moon9p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon9p1.model = glm::translate(moon9p1.model, glm::vec3(0, -5, -10));
-	initQuad(moon10p1);
+	initWire(moon10p1);
 	moon10p1.model = planet.model;
 	moon10p1.model = glm::scale(moon10p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon10p1.model = glm::translate(moon10p1.model, glm::vec3(0, -5, 10));
-	initQuad(moon1p2);
+	initWire(moon1p2);
 	moon1p2.model = planet2.model;
 	moon1p2.model = glm::scale(moon1p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon1p2.model = glm::translate(moon1p2.model, glm::vec3(cos(2*M_PI/3)*10, 0, sin(2*M_PI/3)*10));
-	initQuad(moon2p2);
+	initWire(moon2p2);
 	moon2p2.model = planet2.model;
 	moon2p2.model = glm::scale(moon2p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon2p2.model = glm::translate(moon2p2.model, glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
-	initQuad(moon3p2);
+	initWire(moon3p2);
 	moon3p2.model = planet2.model;
 	moon3p2.model = glm::scale(moon3p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon3p2.model = glm::translate(moon3p2.model, glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
@@ -399,20 +374,20 @@ void doSomething()
 	moon10p1.model = glm::translate(moon10p1.model, glm::vec3(0, -5, 10));
 	//Planet2
 	planet2.model = planet2.model * glm::inverse(planet2.model) * ymat * planet2.model;
+	planet2.model = planet2.model * ymat;
 	planet2.model[3][1] = height;
 	//Moon1
-	moon1p2.model = glm::translate(glm::translate(moon1p2.model, glm::vec3(-cos(2 * M_PI / 3) * 10, 0, -sin(2 * M_PI / 3) * 10))*ymat, glm::vec3(cos(2 * M_PI / 3) * 10, 0, sin(2 * M_PI / 3) * 10));
+	moon1p2.model = glm::translate(glm::translate(moon1p2.model, glm::vec3(-cos(2 * M_PI / 3) * 10, 0, -sin(2 * M_PI / 3) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI / 3) * 10, 0, sin(2 * M_PI / 3) * 10));
 	moon1p2.model = moon1p2.model * glm::inverse(moon1p2.model) * ymat * moon1p2.model;
 	moon1p2.model[3][1] = height+moonheight;
 	//Moon2
-	moon2p2.model = glm::translate(glm::translate(moon2p2.model, glm::vec3(-cos(2 * M_PI / 3*2) * 10, 0, -sin(2 * M_PI / 3*2) * 10))*ymat, glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
+	moon2p2.model = glm::translate(glm::translate(moon2p2.model, glm::vec3(-cos(2 * M_PI / 3*2) * 10, 0, -sin(2 * M_PI / 3*2) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
 	moon2p2.model = moon2p2.model * glm::inverse(moon2p2.model) * ymat * moon2p2.model;
 	moon2p2.model[3][1] = height;
 	//Moon3
-	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(-cos(2 * M_PI) * 10, 0, -sin(2 * M_PI) * 10))*ymat, glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
+	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(-cos(2 * M_PI) * 10, 0, -sin(2 * M_PI) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
 	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
 	moon3p2.model[3][1] = height;
-
 	initLines();
 	p1rad += rad;
 }
@@ -441,22 +416,22 @@ void release()
 
 void renderall()
 {
-	renderQuad(sun);
-	renderQuad(planet);
-	renderQuad(planet2);
-	renderQuad(moon1p1);
-	renderQuad(moon2p1);
-	renderQuad(moon3p1);
-	renderQuad(moon4p1);
-	renderQuad(moon5p1);
-	renderQuad(moon6p1);
-	renderQuad(moon7p1);
-	renderQuad(moon8p1);
-	renderQuad(moon9p1);
-	renderQuad(moon10p1);
-	renderQuad(moon1p2);
-	renderQuad(moon2p2);
-	renderQuad(moon3p2);
+	renderWire(sun);
+	renderWire(planet);
+	renderWire(planet2);
+	renderWire(moon1p1);
+	renderWire(moon2p1);
+	renderWire(moon3p1);
+	renderWire(moon4p1);
+	renderWire(moon5p1);
+	renderWire(moon6p1);
+	renderWire(moon7p1);
+	renderWire(moon8p1);
+	renderWire(moon9p1);
+	renderWire(moon10p1);
+	renderWire(moon1p2);
+	renderWire(moon2p2);
+	renderWire(moon3p2);
 
 }
 /*

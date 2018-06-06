@@ -34,6 +34,7 @@ float zFar  = 100.0f;
 float p1axis = 2.f*(float)M_PI / 8.f;
 float height;
 float moonheight;
+float speed= 0.1f;
 
 
 /*
@@ -383,11 +384,11 @@ void doSomething()
 	//Moon2
 	moon2p2.model = glm::translate(glm::translate(moon2p2.model, glm::vec3(-cos(2 * M_PI / 3*2) * 10, 0, -sin(2 * M_PI / 3*2) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
 	moon2p2.model = moon2p2.model * glm::inverse(moon2p2.model) * ymat * moon2p2.model;
-	moon2p2.model[3][1] = height;
+	moon2p2.model[3][1] = height+moonheight;
 	//Moon3
 	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(-cos(2 * M_PI) * 10, 0, -sin(2 * M_PI) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
 	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
-	moon3p2.model[3][1] = height;
+	moon3p2.model[3][1] = height+moonheight;
 	initLines();
 	p1rad += rad;
 }
@@ -454,7 +455,7 @@ void glutDisplay ()
 {
    GLCODE(render());
    glutSwapBuffers();
-   refreshMatrix(0.1f *(std::clock() - start)/50);
+   refreshMatrix(speed*(std::clock() - start)/50);
    start = std::clock();
    refresh();
 }
@@ -529,6 +530,12 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		break;
 	case 'L':
 		moonheight -= 0.1f;
+		break;
+	case 'w':
+		speed += 0.01f;
+		break;
+	case 'W':
+		speed -= 0.01f;
 		break;
 	case 'a':
 		viewp.eye.z += 0.1;

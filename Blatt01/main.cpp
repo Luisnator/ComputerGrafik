@@ -316,9 +316,12 @@ void doSomething()
 	glm::mat4x4 backup = planet.model;
 	planet.model = planet.model * glm::inverse(planet.model);
 	planet.model = glm::rotate(planet.model, p1axis, glm::vec3(0, 0, 1));
+	//x-coordinate
 	planet.model[3][0] = cos(p1rad)*20;
+	//z-coordinate
 	planet.model[3][2] = sin(p1rad)*20;
 	planet.model = glm::rotate(planet.model, p1rad, glm::vec3(0, 1, 0));
+	//y-coordinate
 	planet.model[3][1] = height;
 	
 	//Moon1
@@ -375,7 +378,7 @@ void doSomething()
 	//Planet2
 	planet2.model = planet2.model * glm::inverse(planet2.model) * ymat * planet2.model;
 	planet2.model = planet2.model * ymat;
-	planet2.model[3][1] = height;
+	planet2.model[3][1] = height+moonheight;
 	//Moon1
 	moon1p2.model = glm::translate(glm::translate(moon1p2.model, glm::vec3(-cos(2 * M_PI / 3) * 10, 0, -sin(2 * M_PI / 3) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI / 3) * 10, 0, sin(2 * M_PI / 3) * 10));
 	moon1p2.model = moon1p2.model * glm::inverse(moon1p2.model) * ymat * moon1p2.model;
@@ -383,11 +386,11 @@ void doSomething()
 	//Moon2
 	moon2p2.model = glm::translate(glm::translate(moon2p2.model, glm::vec3(-cos(2 * M_PI / 3*2) * 10, 0, -sin(2 * M_PI / 3*2) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
 	moon2p2.model = moon2p2.model * glm::inverse(moon2p2.model) * ymat * moon2p2.model;
-	moon2p2.model[3][1] = height;
+	moon2p2.model[3][1] = height+moonheight;
 	//Moon3
 	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(-cos(2 * M_PI) * 10, 0, -sin(2 * M_PI) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
 	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
-	moon3p2.model[3][1] = height;
+	moon3p2.model[3][1] = height+moonheight;
 	initLines();
 	p1rad += rad;
 }

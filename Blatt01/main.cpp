@@ -34,6 +34,7 @@ float zFar  = 100.0f;
 float p1axis = 2.f*(float)M_PI / 8.f;
 float height;
 float moonheight;
+float speed= 0.1f;
 
 
 /*
@@ -457,7 +458,7 @@ void glutDisplay ()
 {
    GLCODE(render());
    glutSwapBuffers();
-   refreshMatrix(0.1f *(std::clock() - start)/50);
+   refreshMatrix(speed*(std::clock() - start)/50);
    start = std::clock();
    refresh();
 }
@@ -532,6 +533,12 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		break;
 	case 'L':
 		moonheight -= 0.1f;
+		break;
+	case 'w':
+		speed += 0.01f;
+		break;
+	case 'W':
+		speed -= 0.01f;
 		break;
 	case 'a':
 		viewp.eye.z += 0.1;

@@ -35,6 +35,15 @@ float p1axis = 2.f*(float)M_PI / 8.f;
 float height;
 float moonheight;
 float speed= 0.1f;
+glm::vec3 color2 = glm::vec3(0.0, 1.0, 0.0);
+//LIGHT
+glm::vec3 dirlight = glm::vec3(0, -1, 0);
+glm::vec3 pointlight;
+GLuint buffer;
+GLuint lightsource;
+struct Material {
+	glm::vec3 am;
+};
 
 
 /*
@@ -108,7 +117,7 @@ void refreshMatrix(float radiant)
 	rad = radiant;
 }
 
-void renderWire(Object model)
+void renderSolid(Object model)
 {
 	// Create mvp.
 	glm::mat4x4 mvp = projection * view * model.model;
@@ -116,14 +125,12 @@ void renderWire(Object model)
 	// Bind the shader program and set uniform(s).
 	program.use();
 	program.setUniform("mvp", mvp);
-
+	program.setUniform("color2", color2);
 	// GLUT: bind vertex-array-object
 	// this vertex-array-object must be bound before the glutWireSphere call
 	glBindVertexArray(model.vao);
-
-	//glLineWidth(1.0f);
-	glutWireSphere(1.0, 10, 10);
-
+	glLineWidth(1.0f);
+	glutSolidSphere(1.0, 10, 10);
 	// GLUT: unbind vertex-array-object
 	glBindVertexArray(0);
 }
@@ -168,14 +175,14 @@ void initLines()
 	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Step 2: Create vertex buffer object for color attribute and bind it to...
-	glGenBuffers(1, &lines.colorBuffer);
+	/*glGenBuffers(1, &lines.colorBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, lines.colorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 
 	// Bind it to color.
 	pos = glGetAttribLocation(programId, "color");
 	glEnableVertexAttribArray(pos);
-	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);*/
 
 	// Step 3: Create vertex buffer object for indices. No binding needed here.
 	glGenBuffers(1, &lines.indexBuffer);
@@ -186,7 +193,7 @@ void initLines()
 	glBindVertexArray(0);
 }
 
-void initWire(Object &model)
+void initSolid(Object &model)
 {
 
 	// set attribute locations (of shader) for GLUT
@@ -195,74 +202,90 @@ void initWire(Object &model)
 	glutSetVertexAttribCoord3(glGetAttribLocation(programId, "position"));
 	// normal attribute to variable "color"
 	// this creates a colorful sphere :-)
-	glutSetVertexAttribNormal(glGetAttribLocation(programId, "color"));
+	//glutSetVertexAttribNormal(glGetAttribLocation(programId, "color"));
 	// create a vertex-array-object for GLUT geometry
 	glGenVertexArrays(1, &model.vao);
 
+
 	// Modify model matrix.
 	model.model = glm::mat4(1.0f);
+}
+void initLight()
+{
+	GLuint programId = program.getHandle();
+	GLuint pos;
+	program.setUniform("dirlight", dirlight);
+	pointlight = glm::vec3(view[3][0], view[3][1], view[3][2]);
+	pos = glGetAttribLocation(programId, "pointlight");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	// Step 2: Create vertex buffer object for color attribute and bind it to...
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), &pointlight, GL_STATIC_DRAW);
+	glBindVertexArray(0);
 }
 
 void initall()
 {
 
-	initWire(sun);
+	initSolid(sun);
 	sun.model = glm::scale(sun.model, glm::vec3(2, 2, 2));
-	initWire(planet);
+	initSolid(planet);
 	planet.model = glm::translate(planet.model, glm::vec3(20, 0, 0));
 	refreshMatrix(2 * M_PI / 8);
 	planet.model = planet.model * zmat;
-	initWire(planet2);
+	initSolid(planet2);
 	planet2.model = glm::translate(planet2.model, glm::vec3(-10, 0, 0));
-	initWire(moon1p1);
+	initSolid(moon1p1);
 	moon1p1.model = planet.model;
 	moon1p1.model = glm::scale(moon1p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon1p1.model = glm::translate(moon1p1.model, glm::vec3(10,0,0));
-	initWire(moon2p1);
+	initSolid(moon2p1);
 	moon2p1.model = planet.model;
 	moon2p1.model = glm::scale(moon2p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon2p1.model = glm::translate(moon2p1.model, glm::vec3(-10, 0, 0));
-	initWire(moon3p1);
+	initSolid(moon3p1);
 	moon3p1.model = planet.model;
 	moon3p1.model = glm::scale(moon3p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon3p1.model = glm::translate(moon3p1.model, glm::vec3(-10, 5, 0));
-	initWire(moon4p1);
+	initSolid(moon4p1);
 	moon4p1.model = planet.model;
 	moon4p1.model = glm::scale(moon4p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon4p1.model = glm::translate(moon4p1.model, glm::vec3(10, 5, 0));
-	initWire(moon5p1);
+	initSolid(moon5p1);
 	moon5p1.model = planet.model;
 	moon5p1.model = glm::scale(moon5p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon5p1.model = glm::translate(moon5p1.model, glm::vec3(0, 5, -10));
-	initWire(moon6p1);
+	initSolid(moon6p1);
 	moon6p1.model = planet.model;
 	moon6p1.model = glm::scale(moon6p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon6p1.model = glm::translate(moon6p1.model, glm::vec3(0, 5, 10));
-	initWire(moon7p1);
+	initSolid(moon7p1);
 	moon7p1.model = planet.model;
 	moon7p1.model = glm::scale(moon7p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon7p1.model = glm::translate(moon7p1.model, glm::vec3(-10, -5, 0));
-	initWire(moon8p1);
+	initSolid(moon8p1);
 	moon8p1.model = planet.model;
 	moon8p1.model = glm::scale(moon8p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon8p1.model = glm::translate(moon8p1.model, glm::vec3(10, -5, 0));
-	initWire(moon9p1);
+	initSolid(moon9p1);
 	moon9p1.model = planet.model;
 	moon9p1.model = glm::scale(moon9p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon9p1.model = glm::translate(moon9p1.model, glm::vec3(0, -5, -10));
-	initWire(moon10p1);
+	initSolid(moon10p1);
 	moon10p1.model = planet.model;
 	moon10p1.model = glm::scale(moon10p1.model, glm::vec3(0.5, 0.5, 0.5));
 	moon10p1.model = glm::translate(moon10p1.model, glm::vec3(0, -5, 10));
-	initWire(moon1p2);
+	initSolid(moon1p2);
 	moon1p2.model = planet2.model;
 	moon1p2.model = glm::scale(moon1p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon1p2.model = glm::translate(moon1p2.model, glm::vec3(cos(2*M_PI/3)*10, 0, sin(2*M_PI/3)*10));
-	initWire(moon2p2);
+	initSolid(moon2p2);
 	moon2p2.model = planet2.model;
 	moon2p2.model = glm::scale(moon2p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon2p2.model = glm::translate(moon2p2.model, glm::vec3(cos(2 * M_PI / 3*2) * 10, 0, sin(2 * M_PI / 3*2) * 10));
-	initWire(moon3p2);
+	initSolid(moon3p2);
 	moon3p2.model = planet2.model;
 	moon3p2.model = glm::scale(moon3p2.model, glm::vec3(0.5, 0.5, 0.5));
 	moon3p2.model = glm::translate(moon3p2.model, glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
@@ -277,6 +300,8 @@ bool init()
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 	glShadeModel(GL_SMOOTH);
+	//glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHT0);
 	viewp.eye = { 0.0f,15.0f,40.0f };
 	viewp.center = { 0.0f,0.0f,0.f };
 	viewp.up = { 0.0f,1.0f,0.0f };
@@ -420,22 +445,22 @@ void release()
 
 void renderall()
 {
-	renderWire(sun);
-	renderWire(planet);
-	renderWire(planet2);
-	renderWire(moon1p1);
-	renderWire(moon2p1);
-	renderWire(moon3p1);
-	renderWire(moon4p1);
-	renderWire(moon5p1);
-	renderWire(moon6p1);
-	renderWire(moon7p1);
-	renderWire(moon8p1);
-	renderWire(moon9p1);
-	renderWire(moon10p1);
-	renderWire(moon1p2);
-	renderWire(moon2p2);
-	renderWire(moon3p2);
+	renderSolid(sun);
+	renderSolid(planet);
+	renderSolid(planet2);
+	renderSolid(moon1p1);
+	renderSolid(moon2p1);
+	renderSolid(moon3p1);
+	renderSolid(moon4p1);
+	renderSolid(moon5p1);
+	renderSolid(moon6p1);
+	renderSolid(moon7p1);
+	renderSolid(moon8p1);
+	renderSolid(moon9p1);
+	renderSolid(moon10p1);
+	renderSolid(moon1p2);
+	renderSolid(moon2p2);
+	renderSolid(moon3p2);
 
 }
 /*
@@ -450,6 +475,8 @@ void render()
 }
 void refresh()
 {
+	pointlight = glm::vec3(view[3][0], view[3][1], view[3][2]);
+	//std::cout << view[3][2];
 	doSomething();
 	renderall();
 }
@@ -540,6 +567,16 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 	case 'W':
 		speed -= 0.01f;
 		break;
+	case '1':
+		if (lightsource == 1)
+		{
+			lightsource = 0;
+		}
+		else
+		{
+			lightsource = 1;
+		}
+		break;
 	case 'a':
 		viewp.eye.z += 0.1;
 		view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
@@ -558,7 +595,7 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 int main(int argc, char** argv)
 {
 	// GLUT: Initialize freeglut library (window toolkit).
-        glutInitWindowSize    (WINDOW_WIDTH, WINDOW_HEIGHT);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutInitWindowPosition(40,40);
 	glutInit(&argc, argv);
 

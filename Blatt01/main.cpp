@@ -15,6 +15,7 @@
 #include <math.h>
 #include <time.h>
 #include <ctime>
+#include "ParseFile.h"
 #define M_PI acos(-1.0)
 
 // Standard window width
@@ -29,6 +30,7 @@ cg::GLSLProgram program;
 glm::mat4x4 view;
 glm::mat4x4 projection;
 std::clock_t start;
+
 float zNear = 0.1f;
 float zFar  = 100.0f;
 float p1axis = 2.f*(float)M_PI / 8.f;
@@ -36,14 +38,10 @@ float height;
 float moonheight;
 float speed= 0.1f;
 glm::vec3 color2 = glm::vec3(0.0, 1.0, 0.0);
-//LIGHT
-glm::vec3 dirlight = glm::vec3(0, -1, 0);
-glm::vec3 pointlight;
-GLuint buffer;
-GLuint lightsource;
-struct Material {
-	glm::vec3 am;
-};
+ParseFile sunp;
+BOOLEAN renderBoundy;
+BOOLEAN rendernormalface;
+BOOLEAN rendernormalvertex;
 
 
 /*
@@ -75,8 +73,10 @@ glm::mat4x4 ymat;
 glm::mat4x4 zmat;
 
 
-Object quad;
+Object boundy;
 Object sun;
+Object normalface;
+Object normalvertex;
 Object planet;
 Object planet2;
 Object moon1p1;
@@ -125,7 +125,6 @@ void renderSolid(Object model)
 	// Bind the shader program and set uniform(s).
 	program.use();
 	program.setUniform("mvp", mvp);
-	program.setUniform("color2", color2);
 	// GLUT: bind vertex-array-object
 	// this vertex-array-object must be bound before the glutWireSphere call
 	glBindVertexArray(model.vao);
@@ -149,8 +148,64 @@ void renderLines()
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
+void renderSun()
+{
+	// Create mvp.
+	glm::mat4x4 mvp = projection * view * sun.model;
 
+	// Bind the shader program and set uniform(s).
+	program.use();
+	program.setUniform("mvp", mvp);
 
+	// Bind vertex array object so we can render the 1 triangle.
+	glBindVertexArray(sun.vao);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+	glDrawElements(GL_TRIANGLES,sunp.indices.size()*3, GL_UNSIGNED_SHORT, 0);
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	glBindVertexArray(0);
+}
+void renderboundysun()
+{
+	// Create mvp.
+	glm::mat4x4 mvp = projection * view * boundy.model;
+
+	// Bind the shader program and set uniform(s).
+	program.use();
+	program.setUniform("mvp", mvp);
+
+	// Bind vertex array object so we can render the 2 triangles.
+	glBindVertexArray(boundy.vao);
+	glDrawElements(GL_LINES, sunp.boundingbox.indices.size(), GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
+void renderNormalsFace()
+{
+	// Create mvp.
+	glm::mat4x4 mvp = projection * view * normalface.model;
+
+	// Bind the shader program and set uniform(s).
+	program.use();
+	program.setUniform("mvp", mvp);
+
+	// Bind vertex array object so we can render the 2 triangles.
+	glBindVertexArray(normalface.vao);
+	glDrawElements(GL_LINES, sunp.vertexlist.size()*2, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
+void renderNormalsVertex()
+{
+	// Create mvp.
+	glm::mat4x4 mvp = projection * view * normalvertex.model;
+
+	// Bind the shader program and set uniform(s).
+	program.use();
+	program.setUniform("mvp", mvp);
+
+	// Bind vertex array object so we can render the 2 triangles.
+	glBindVertexArray(normalvertex.vao);
+	glDrawElements(GL_LINES, sunp.vertexlist.size()*2 , GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
 void initLines()
 {
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
@@ -175,14 +230,14 @@ void initLines()
 	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Step 2: Create vertex buffer object for color attribute and bind it to...
-	/*glGenBuffers(1, &lines.colorBuffer);
+	glGenBuffers(1, &lines.colorBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, lines.colorBuffer);
 	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 
 	// Bind it to color.
 	pos = glGetAttribLocation(programId, "color");
 	glEnableVertexAttribArray(pos);
-	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);*/
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	// Step 3: Create vertex buffer object for indices. No binding needed here.
 	glGenBuffers(1, &lines.indexBuffer);
@@ -192,7 +247,169 @@ void initLines()
 	// Unbind vertex array object (back to default).
 	glBindVertexArray(0);
 }
+void initBoundybox()
+{
+	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
+	std::vector<glm::vec3> vertices;
+	for (int i = 0; i < sunp.boundingbox.vertices.size(); i++)
+	{
+		vertices.push_back(sun.model*glm::vec4(sunp.boundingbox.vertices[i][0], sunp.boundingbox.vertices[i][1], sunp.boundingbox.vertices[i][2], 1));
+	}
+	std::vector<glm::vec3> colors;
+	for (int i = 0; i < sunp.boundingbox.vertices.size(); i++)
+	{
+		colors.push_back(glm::vec3(0.f,1.f,0.f));
+	}
+	std::vector<GLushort> indices;
+	for (int i = 0; i < sunp.boundingbox.indices.size(); i++)
+	{
+		indices.push_back(sunp.boundingbox.indices[i]);
+	}
+	GLuint programId = program.getHandle();
+	GLuint pos;
 
+	// Step 0: Create vertex array object.
+	glGenVertexArrays(1, &boundy.vao);
+	glBindVertexArray(boundy.vao);
+
+	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
+	glGenBuffers(1, &boundy.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, boundy.positionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind it to position.
+	pos = glGetAttribLocation(programId, "position");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 2: Create vertex buffer object for color attribute and bind it to...
+	glGenBuffers(1, &boundy.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, boundy.colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
+
+	// Bind it to color.
+	pos = glGetAttribLocation(programId, "color");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 3: Create vertex buffer object for indices. No binding needed here.
+	glGenBuffers(1, &boundy.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, boundy.indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
+
+	// Unbind vertex array object (back to default).
+	glBindVertexArray(0);
+}
+void initNormalsFace()
+{
+	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
+	std::vector<glm::vec3> vertices;
+	for (int i = 0; i < sunp.vertexlist.size(); i++)
+	{
+		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
+		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->edge->face->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->edge->face->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->edge->face->normal.z, 1));
+	}
+	std::vector<glm::vec3> colors;
+	for (int i = 0; i < sunp.vertexlist.size(); i++)
+	{
+		colors.push_back(glm::vec3(0.f, 1.f, 1.f));
+		colors.push_back(glm::vec3(0.f, 1.f, 1.f));
+	}
+	std::vector<GLushort> indices;
+	for (int i = 0; i < sunp.vertexlist.size()*2; i++)
+	{
+		indices.push_back((GLushort)i);
+	}
+	GLuint programId = program.getHandle();
+	GLuint pos;
+
+	// Step 0: Create vertex array object.
+	glGenVertexArrays(1, &normalface.vao);
+	glBindVertexArray(normalface.vao);
+
+	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
+	glGenBuffers(1, &normalface.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalface.positionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind it to position.
+	pos = glGetAttribLocation(programId, "position");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 2: Create vertex buffer object for color attribute and bind it to...
+	glGenBuffers(1, &normalface.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalface.colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
+
+	// Bind it to color.
+	pos = glGetAttribLocation(programId, "color");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 3: Create vertex buffer object for indices. No binding needed here.
+	glGenBuffers(1, &normalface.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalface.indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
+
+	// Unbind vertex array object (back to default).
+	glBindVertexArray(0);
+}
+void initNormalsVertex()
+{
+	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
+	std::vector<glm::vec3> vertices;
+	for (int i = 0; i < sunp.vertexlist.size(); i++)
+	{
+		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
+		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->normal.z, 1));
+	}
+	std::vector<glm::vec3> colors;
+	for (int i = 0; i < sunp.vertexlist.size(); i++)
+	{
+		colors.push_back(glm::vec3(1.f, 0.6f, 0.f));
+		colors.push_back(glm::vec3(1.f, 0.6f, 0.f));
+	}
+	std::vector<GLushort> indices;
+	for (int i = 0; i < sunp.vertexlist.size() * 2; i++)
+	{
+		indices.push_back((GLushort)i);
+	}
+	GLuint programId = program.getHandle();
+	GLuint pos;
+
+	// Step 0: Create vertex array object.
+	glGenVertexArrays(1, &normalvertex.vao);
+	glBindVertexArray(normalvertex.vao);
+
+	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
+	glGenBuffers(1, &normalvertex.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalvertex.positionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind it to position.
+	pos = glGetAttribLocation(programId, "position");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 2: Create vertex buffer object for color attribute and bind it to...
+	glGenBuffers(1, &normalvertex.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, normalvertex.colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
+
+	// Bind it to color.
+	pos = glGetAttribLocation(programId, "color");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 3: Create vertex buffer object for indices. No binding needed here.
+	glGenBuffers(1, &normalvertex.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, normalvertex.indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
+
+	// Unbind vertex array object (back to default).
+	glBindVertexArray(0);
+}
 void initSolid(Object &model)
 {
 
@@ -210,27 +427,76 @@ void initSolid(Object &model)
 	// Modify model matrix.
 	model.model = glm::mat4(1.0f);
 }
-void initLight()
+
+void initSun()
 {
+	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
+	std::vector<glm::vec3> tvertices;
+	for (int i = 0; i < sunp.vertices.size(); i++)
+	{
+		tvertices.push_back(glm::vec3(sunp.vertices[i][0],sunp.vertices[i][1],sunp.vertices[i][2]));
+	}
+	const std::vector<glm::vec3> vertices = tvertices;
+	std::vector<glm::vec3> tcolors;
+	for (int i = 0; i < sunp.vertices.size(); i++)
+	{
+		tcolors.push_back(glm::vec3((float)rand()/RAND_MAX,(float)rand()/RAND_MAX,(float)rand()/RAND_MAX));
+	}
+	const std::vector<glm::vec3> colors = tcolors;
+	std::vector<GLushort> tindices;
+	for (int i = 0; i < sunp.indices.size(); i++)
+	{
+		tindices.push_back((GLushort)sunp.indices[i][0]-1);
+		tindices.push_back((GLushort)sunp.indices[i][1]-1);
+		tindices.push_back((GLushort)sunp.indices[i][2]-1);
+	}
+	const std::vector<GLushort> indices = tindices;
 	GLuint programId = program.getHandle();
 	GLuint pos;
-	program.setUniform("dirlight", dirlight);
-	pointlight = glm::vec3(view[3][0], view[3][1], view[3][2]);
-	pos = glGetAttribLocation(programId, "pointlight");
+
+	// Step 0: Create vertex array object.
+	glGenVertexArrays(1, &sun.vao);
+	glBindVertexArray(sun.vao);
+
+	// Step 1: Create vertex buffer object for position attribute and bind it to the associated "shader attribute".
+	glGenBuffers(1, &sun.positionBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, sun.positionBuffer);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+
+	// Bind it to position.
+	pos = glGetAttribLocation(programId, "position");
 	glEnableVertexAttribArray(pos);
 	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
 	// Step 2: Create vertex buffer object for color attribute and bind it to...
-	glGenBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3), &pointlight, GL_STATIC_DRAW);
+	glGenBuffers(1, &sun.colorBuffer);
+	glBindBuffer(GL_ARRAY_BUFFER, sun.colorBuffer);
+	glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
+
+	// Bind it to color.
+	pos = glGetAttribLocation(programId, "color");
+	glEnableVertexAttribArray(pos);
+	glVertexAttribPointer(pos, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// Step 3: Create vertex buffer object for indices. No binding needed here.
+	glGenBuffers(1, &sun.indexBuffer);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sun.indexBuffer);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(GLushort), indices.data(), GL_STATIC_DRAW);
+
+	// Unbind vertex array object (back to default).
 	glBindVertexArray(0);
+
+	// Modify model matrix.
+	sun.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 }
 
 void initall()
 {
 
-	initSolid(sun);
-	sun.model = glm::scale(sun.model, glm::vec3(2, 2, 2));
+	initSun();
+	initBoundybox();
+	initNormalsFace();
+	initNormalsVertex();
 	initSolid(planet);
 	planet.model = glm::translate(planet.model, glm::vec3(20, 0, 0));
 	refreshMatrix(2 * M_PI / 8);
@@ -299,7 +565,7 @@ bool init()
 	// OpenGL: Set "background" color and enable depth testing.
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
-	glShadeModel(GL_SMOOTH);
+	//glShadeModel(GL_SMOOTH);
 	//glEnable(GL_LIGHTING);
 	//glEnable(GL_LIGHT0);
 	viewp.eye = { 0.0f,15.0f,40.0f };
@@ -418,6 +684,9 @@ void doSomething()
 	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
 	moon3p2.model[3][1] = height+moonheight;
 	initLines();
+	initBoundybox();
+	initNormalsFace();
+	initNormalsVertex();
 	p1rad += rad;
 }
 
@@ -438,14 +707,16 @@ void releaseObject(Object& obj)
  */
 void release()
 {
-	// Shader program will be released upon program termination.
-	releaseObject(quad);
+	
 }
 
 
 void renderall()
 {
-	renderSolid(sun);
+	renderSun();
+	if (renderBoundy) { renderboundysun(); }
+	if (rendernormalface) { renderNormalsFace(); }
+	if (rendernormalvertex) { renderNormalsVertex(); }
 	renderSolid(planet);
 	renderSolid(planet2);
 	renderSolid(moon1p1);
@@ -475,7 +746,6 @@ void render()
 }
 void refresh()
 {
-	pointlight = glm::vec3(view[3][0], view[3][1], view[3][2]);
 	//std::cout << view[3][2];
 	doSomething();
 	renderall();
@@ -531,11 +801,9 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 		-sin(radiant),0,cos(radiant),0,
 		0,0,0,1
 	};
-	//old transformation
-	glm::mat4x4 backup = quad.model;
-	//inverse transform-matrix
-	glm::mat4x4 inverse = glm::inverse(quad.model);
-
+	glm::mat4x4 backupx;
+	glm::mat4x4 backupy;
+	glm::mat4x4 backupz;
 	switch (keycode)
 	{
 	case 27: // ESC
@@ -548,6 +816,36 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 	case 'P':
 		p1axis -= 0.1;
 		if (p1axis <= 0) { p1axis = 2*M_PI - p1axis; }
+		break;
+	case 'i':
+		if (renderBoundy == true)
+		{
+			renderBoundy = false;
+		}
+		else
+		{
+			renderBoundy = true;
+		}
+		break;
+	case 'n':
+		if (rendernormalface == true)
+		{
+			rendernormalface = false;
+		}
+		else
+		{
+			rendernormalface = true;
+		}
+		break;
+	case 'h':
+		if (rendernormalvertex == true)
+		{
+			rendernormalvertex = false;
+		}
+		else
+		{
+			rendernormalvertex = true;
+		}
 		break;
 	case 't':
 		height += 0.1f;
@@ -567,16 +865,6 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 	case 'W':
 		speed -= 0.01f;
 		break;
-	case '1':
-		if (lightsource == 1)
-		{
-			lightsource = 0;
-		}
-		else
-		{
-			lightsource = 1;
-		}
-		break;
 	case 'a':
 		viewp.eye.z += 0.1;
 		view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
@@ -584,6 +872,27 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 	case 's':
 		viewp.eye.z -= 0.1;
 		view = glm::lookAt(viewp.eye, viewp.center, viewp.up);
+		break;
+	case 'x':
+		
+		backupx = sun.model;
+		sun.model = glm::inverse(sun.model)*sun.model;
+		sun.model = sun.model * xmat;
+		sun.model = sun.model * backupx;
+		break;
+	case 'y':
+		
+		backupy = sun.model;
+		sun.model = glm::inverse(sun.model)*sun.model;
+		sun.model = sun.model * ymat;
+		sun.model = sun.model * backupy;
+		break;
+	case 'z':
+		
+		backupz = sun.model;
+		sun.model = glm::inverse(sun.model)*sun.model;
+		sun.model = sun.model * zmat;
+		sun.model = sun.model * backupz;
 		break;
 	}
 	
@@ -594,6 +903,13 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 
 int main(int argc, char** argv)
 {
+	
+	sunp.parseFile("Testobjs/A4_testcube2_mitSpitze.obj");
+	//sunp.parseFile("Testobjs/dodecahedron.obj");
+	//sunp.parseFile("Testobjs/stanford_bunny_closed.obj");
+	sunp.getHalfEdge();
+	sunp.checkConsistence();
+
 	// GLUT: Initialize freeglut library (window toolkit).
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutInitWindowPosition(40,40);

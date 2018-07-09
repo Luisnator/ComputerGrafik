@@ -23,77 +23,51 @@ bool ParseFile::parseFile(std::string path)
 	if (inputstream.is_open())
 	{
 		string type;
-		float n1;
-		float n2;
-		float n3;
-		float n4;
-		float n5;
+		
 		string line;
 		float maxX = numeric_limits<float>::min(), maxY = numeric_limits<float>::min(), maxZ = numeric_limits<float>::min();
 		float minX = numeric_limits<float>::max(), minY = numeric_limits<float>::max(), minZ = numeric_limits<float>::max();
 		while (getline(inputstream, line))
 		{
+			type = "";
+			vector<string> values2;
+			vector<float> values;
 			istringstream in(line);
-			in >> type >> n1 >> n2 >> n3;
-			//Case more then 3
-			if (in.rdbuf()->in_avail() != 0)
+			in >> type;
+			while (in.rdbuf()->in_avail() != 0)
 			{
-				in >> n4;
-				//Case 5
-				if (in.rdbuf()->in_avail() != 0)
-				{
-					in >> n5;
-				//	cout << type << " " << n1 << " " << n2 << " " << n3 << " " << n4 << " " << n5 << "\n";
-					vector<float> v = { n1, n2, n3, n4, n5 };
-					if (type.compare("v") == 0)
-					{
-						vertices.push_back(v);
-					}
-					else
-					{
-						indices.push_back(vector<float>{n1,n2,n3});
-						indices.push_back(vector<float>{n1,n3,n5});
-						indices.push_back(vector<float>{n3,n4,n5});
-					}
-				}
-				//Case 4
-				else
-				{
-				//	cout << type << " " << n1 << " " << n2 << " " << n3 << " " << n4 << "\n";
-					vector<float> v = { n1, n2, n3, n4 };
-					if (type.compare("v") == 0)
-					{
-						vertices.push_back(v);
-					}
-					else
-					{
-						indices.push_back(vector<float>{n1,n2,n3});
-						indices.push_back(vector<float>{n1,n3,n4});
-					}
-				}
+				string temp;
+				in >> temp;
+				values2.push_back(temp);
 			}
-			//Case 3
-			else
+			if (type == "v")
 			{
-				vector<float> v = { n1, n2, n3};
-				if (type.compare("v") == 0)
+				if (maxX < strtof(values2[0].c_str(), 0))maxX = strtof(values2[0].c_str(), 0);
+				if (minX > strtof(values2[0].c_str(), 0))minX = strtof(values2[0].c_str(), 0);
+				if (maxY < strtof(values2[1].c_str(), 0))maxY = strtof(values2[1].c_str(), 0);
+				if (minY > strtof(values2[1].c_str(), 0))minY = strtof(values2[1].c_str(), 0);
+				if (maxZ < strtof(values2[2].c_str(), 0))maxZ = strtof(values2[2].c_str(), 0);
+				if (minZ > strtof(values2[2].c_str(), 0))minZ = strtof(values2[2].c_str(), 0);
+				for (int i = 0; i < values2.size(); i++)
 				{
-					vertices.push_back(v);
-					if (maxX < n1)maxX = n1;
-					if (minX > n1)minX = n1;
-					if (maxY < n2)maxY = n2;
-					if (minY > n2)minY = n2;
-					if (maxZ < n3)maxZ = n3;
-					if (minZ > n3)minZ = n3;
-
+					values.push_back(strtof(values2[i].c_str(), 0));
 				}
-				else
+				vertices.push_back(values);
+			}
+			else if (type == "f")
+			{
+				float first = strtof(values2[0].substr(0,values2[0].find("/")).c_str(),0);
+				for (int i = 0; i < values2.size()-2; i++)
 				{
-					indices.push_back(v);
+					vector<float> indi;
+					indi.push_back(first);
+					indi.push_back(strtof(values2[i+1].substr(0, values2[i+1].find("/")).c_str(), 0));
+					indi.push_back(strtof(values2[i+2].substr(0, values2[i+2].find("/")).c_str(), 0));
+					indices.push_back(indi);
 				}
-				//cout << type << " " << n1 << " " << n2 << " " << n3 << " " << "\n";
 			}
 		}
+
 		createBoundingbox(maxX, minX, maxY, minY, maxZ, minZ);
 		cout << "\n\n\n";
 	}

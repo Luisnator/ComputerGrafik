@@ -209,7 +209,8 @@ void renderNormalsVertex()
 void initLines()
 {
 	// Construct triangle. These vectors can go out of scope after we have send all data to the graphics card.
-	const std::vector<glm::vec3> vertices = { planet.model * glm::vec4(0,-10.f,0,1), planet.model * glm::vec4(0,10.f,0,1),glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f), planet2.model *glm::vec4(0.0f, -10.0f, 0,1), planet2.model* glm::vec4(0.0f, 10.0f, 0.f,1) };
+	//const std::vector<glm::vec3> vertices = { planet.model * glm::vec4(0,-10.f,0,1), planet.model * glm::vec4(0,10.f,0,1),glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f), planet2.model *glm::vec4(0.0f, -10.0f, 0,1), planet2.model* glm::vec4(0.0f, 10.0f, 0.f,1) };
+	const std::vector<glm::vec3> vertices = {glm::vec3(0.0f, -1000.0f, 0.0f), glm::vec3(0.0f, 1000.0f, 0.0f) };
 	const std::vector<glm::vec3> colors = { glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f),glm::vec3(1.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 0.0f),glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
 	const std::vector<GLushort> indices = { 0, 1,2,3,4,5};
 	GLuint programId = program.getHandle();
@@ -253,7 +254,7 @@ void initBoundybox()
 	std::vector<glm::vec3> vertices;
 	for (int i = 0; i < sunp.boundingbox.vertices.size(); i++)
 	{
-		vertices.push_back(sun.model*glm::vec4(sunp.boundingbox.vertices[i][0], sunp.boundingbox.vertices[i][1], sunp.boundingbox.vertices[i][2], 1));
+		vertices.push_back(glm::vec4(sunp.boundingbox.vertices[i][0], sunp.boundingbox.vertices[i][1], sunp.boundingbox.vertices[i][2], 1));
 	}
 	std::vector<glm::vec3> colors;
 	for (int i = 0; i < sunp.boundingbox.vertices.size(); i++)
@@ -306,8 +307,8 @@ void initNormalsFace()
 	std::vector<glm::vec3> vertices;
 	for (int i = 0; i < sunp.vertexlist.size(); i++)
 	{
-		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
-		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->edge->face->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->edge->face->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->edge->face->normal.z, 1));
+		vertices.push_back(glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
+		vertices.push_back(glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->edge->face->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->edge->face->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->edge->face->normal.z, 1));
 	}
 	std::vector<glm::vec3> colors;
 	for (int i = 0; i < sunp.vertexlist.size(); i++)
@@ -361,8 +362,8 @@ void initNormalsVertex()
 	std::vector<glm::vec3> vertices;
 	for (int i = 0; i < sunp.vertexlist.size(); i++)
 	{
-		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
-		vertices.push_back(sun.model*glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->normal.z, 1));
+		vertices.push_back(glm::vec4(sunp.vertexlist[i]->x, sunp.vertexlist[i]->y, sunp.vertexlist[i]->z, 1));
+		vertices.push_back(glm::vec4(sunp.vertexlist[i]->x + sunp.vertexlist[i]->normal.x, sunp.vertexlist[i]->y + sunp.vertexlist[i]->normal.y, sunp.vertexlist[i]->z + sunp.vertexlist[i]->normal.z, 1));
 	}
 	std::vector<glm::vec3> colors;
 	for (int i = 0; i < sunp.vertexlist.size(); i++)
@@ -683,10 +684,9 @@ void doSomething()
 	moon3p2.model = glm::translate(glm::translate(moon3p2.model, glm::vec3(-cos(2 * M_PI) * 10, 0, -sin(2 * M_PI) * 10))*glm::inverse(ymat)*glm::inverse(ymat), glm::vec3(cos(2 * M_PI) * 10, 0, sin(2 * M_PI) * 10));
 	moon3p2.model = moon3p2.model * glm::inverse(moon3p2.model) * ymat * moon3p2.model;
 	moon3p2.model[3][1] = height+moonheight;
-	initLines();
-	initBoundybox();
-	initNormalsFace();
-	initNormalsVertex();
+	boundy.model = sun.model;
+	normalface.model = sun.model;
+	normalvertex.model = sun.model;
 	p1rad += rad;
 }
 
@@ -707,7 +707,25 @@ void releaseObject(Object& obj)
  */
 void release()
 {
-	
+	releaseObject(boundy);
+	releaseObject(sun);
+	releaseObject(normalface);
+	releaseObject(normalvertex);
+	releaseObject(planet);
+	releaseObject(planet2);
+	releaseObject(moon1p1);
+	releaseObject(moon2p1);
+	releaseObject(moon3p1);
+	releaseObject(moon4p1);
+	releaseObject(moon5p1);
+	releaseObject(moon6p1);
+	releaseObject(moon7p1);
+	releaseObject(moon8p1);
+	releaseObject(moon9p1);
+	releaseObject(moon10p1);
+	releaseObject(moon1p2);
+	releaseObject(moon2p2);
+	releaseObject(moon3p2);
 }
 
 
@@ -903,12 +921,14 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 
 int main(int argc, char** argv)
 {
-	
-	sunp.parseFile("Testobjs/A4_testcube2_mitSpitze.obj");
+	sunp.parseFile("Testobjs/Superspaceship.obj");
+	//sunp.parseFile("Testobjs/cone_vtvn.obj");
+	//sunp.parseFile("Testobjs/cone.obj");
+	//sunp.parseFile("Testobjs/A4_testcube2_mitSpitze.obj");
 	//sunp.parseFile("Testobjs/dodecahedron.obj");
 	//sunp.parseFile("Testobjs/stanford_bunny_closed.obj");
-	sunp.getHalfEdge();
-	sunp.checkConsistence();
+	//sunp.getHalfEdge();
+	//sunp.checkConsistence();
 
 	// GLUT: Initialize freeglut library (window toolkit).
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);

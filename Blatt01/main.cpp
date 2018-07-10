@@ -921,7 +921,8 @@ void glutKeyboard (unsigned char keycode, int x, int y)
 
 int main(int argc, char** argv)
 {
-	sunp.parseFile("Testobjs/Superspaceship.obj");
+	sunp.parseFile("Testobjs/cone_maya.obj");
+	//sunp.parseFile("Testobjs/Superspaceship.obj");
 	//sunp.parseFile("Testobjs/cone_vtvn.obj");
 	//sunp.parseFile("Testobjs/cone.obj");
 	//sunp.parseFile("Testobjs/A4_testcube2_mitSpitze.obj");

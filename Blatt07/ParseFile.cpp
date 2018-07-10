@@ -91,16 +91,16 @@ bool ParseFile::parseFile(std::string path)
 					indices.push_back(indi);
 
 					//texi first
-					texi.push_back(firstt);
+					if(f2 != "") texi.push_back(firstt);
 					//texi second
 					string t1;
 					getline(s1, t1, '/');
-					texi.push_back(strtof(t1.c_str(), 0));
+					if(t1 != "") texi.push_back(strtof(t1.c_str(), 0));
 					//texi third
 					string t2;
 					getline(s2, t2, '/');
-					texi.push_back(strtof(t2.c_str(), 0));
-					inditex.push_back(texi);
+					if(t1 != "") texi.push_back(strtof(t2.c_str(), 0));
+					if(!texi.empty()) inditex.push_back(texi);
 
 					//normi first
 					normi.push_back(firstn);
